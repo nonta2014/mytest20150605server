@@ -1,0 +1,9 @@
+bower_components/
+node_modules/
+temp/
+
+__newText.md
+_*
+.DS_Store
+
+secrets/
