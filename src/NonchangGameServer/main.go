@@ -8,6 +8,7 @@ import (
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 	// "./api" //goapp testでコンパイルテストする時用（メモ：もう使えない。。）
 	"NonchangGameServer/api"
+	"NonchangGameServer/api/game"
 
 	// "appengine/memcache"
 	// "math/rand"
@@ -64,15 +65,20 @@ func init() {
 	//=========================================
 	//cloud endpoint
 
-	if _, err := api.RegisterClickLogService(); err != nil {
-		panic(err.Error())
-	}
+	//初期テスト
+	// if _, err := api.RegisterClickLogService(); err != nil {
+	// 	panic(err.Error())
+	// }
 
 	if _, err := api.RegisterAccountService(); err != nil {
 		panic(err.Error())
 	}
 
 	if _, err := api.RegisterChatroomService(); err != nil {
+		panic(err.Error())
+	}
+
+	if _, err := game.RegisterSampleLandService(); err != nil {
 		panic(err.Error())
 	}
 

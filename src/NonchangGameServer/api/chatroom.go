@@ -13,6 +13,7 @@ import (
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 	"time"
 
+	"NonchangGameServer/api/common"
 	"NonchangGameServer/model"
 )
 
@@ -60,26 +61,27 @@ func RegisterChatroomService() (*endpoints.RPCService, error) {
 //サービス定義開始
 type ChatroomService struct{}
 
-func (sv *ChatroomService) Ping(c endpoints.Context) (*SimpleResult, error) {
-	return &SimpleResult{IsSuccess: true}, nil
+func (sv *ChatroomService) Ping(c endpoints.Context) (*common.SimpleResult, error) {
+	return &common.SimpleResult{IsSuccess: true}, nil
 }
 
-//TODO - PagingRequestに置き換えたい……いや、カーソル？
-func (sv *ChatroomService) List(c endpoints.Context, r *LimitRequest) (*model.ChatMessageList, error) {
-	result, err := model.AllChatMessages(c, "-PostedAt", r.Limit)
-
+//TODO - カーソル化
+func (sv *ChatroomService) List(c endpoints.Context, r *common.LimitAndCursorRequest) (*model.ChatMessageList, error) {
+	// result, err := model.AllChatMessages(c, "-PostedAt", r.Limit)
+	result, err := model.AllChatMessages2(c, "-PostedAt", r.Limit, r.Cursor)
 	if err != nil {
+		c.Infof("\n======== AllChatMessages2でエラーです。 %v\n", err)
 		return nil, err
 	}
 	return result, nil
 }
 
-func (sv *ChatroomService) Count(c endpoints.Context) (*Count, error) {
+func (sv *ChatroomService) Count(c endpoints.Context) (*common.CountResult, error) {
 	n, err := datastore.NewQuery("ChatMessage").Count(c)
 	if err != nil {
 		return nil, err
 	}
-	return &Count{n}, nil
+	return &common.CountResult{n}, nil
 }
 
 func (ps *ChatroomService) Add(ctx endpoints.Context, addData *model.ChatMessage) (*model.ChatMessage, error) {

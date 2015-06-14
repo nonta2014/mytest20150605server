@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 	"time"
 
+	"NonchangGameServer/api/common"
 	"NonchangGameServer/model"
 )
 
@@ -82,8 +83,8 @@ type AccountService struct{}
 
 //Pingサービス
 
-func (ps *AccountService) Ping(c endpoints.Context) (*SimpleResult, error) {
-	return &SimpleResult{IsSuccess: true}, nil
+func (ps *AccountService) Ping(c endpoints.Context) (*common.SimpleResult, error) {
+	return &common.SimpleResult{IsSuccess: true}, nil
 }
 
 // //以下は実際には不要。offsetできないのかな？ できれば管理用には十分なんだけども。
@@ -96,12 +97,12 @@ func (ps *AccountService) Ping(c endpoints.Context) (*SimpleResult, error) {
 // }
 
 //管理系でプレイヤー総数は取得できる必要があるだろう
-func (s *AccountService) Count(ctx endpoints.Context) (*Count, error) {
+func (s *AccountService) Count(ctx endpoints.Context) (*common.CountResult, error) {
 	n, err := datastore.NewQuery("Player").Count(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &Count{n}, nil
+	return &common.CountResult{n}, nil
 }
 
 //
@@ -112,7 +113,7 @@ func (s *AccountService) Count(ctx endpoints.Context) (*Count, error) {
 
 func (ps *AccountService) SignUp(ctx endpoints.Context, addData *model.Player) (*model.Player, error) {
 	// k := datastore.NewIncompleteKey(ctx, "Player", nil)
-	k := datastore.NewKey(ctx, "Player", addData.UUID, 0, nil) //TODO - 引数の意味は？
+	k := datastore.NewKey(ctx, "Player", addData.UUID, 0, nil) //最後のはparentのKey。Ancestor？調べなきゃ。
 
 	// ctx.Infof("addDataチェック : ", addData.Name, 123)
 
@@ -136,7 +137,7 @@ type PlayerGetReq struct {
 	UUID string `json:"uuid"`
 }
 
-func (ps *AccountService) Login(c endpoints.Context, req *PlayerGetReq) (*model.Player, error) {
+func (ps *AccountService) Login(c endpoints.Context, req *common.UUIDRequest) (*model.Player, error) {
 	k := datastore.NewKey(c, "Player", req.UUID, 0, nil)
 	playerData := new(model.Player)
 	err := datastore.Get(c, k, playerData)
