@@ -9,15 +9,19 @@ package game
 */
 
 import (
+	"errors"
+	// "fmt"
+	"strings"
+	"time"
+
 	// "appengine"
-	// "appengine/datastore"
+	"appengine/datastore"
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 	"github.com/mjibson/goon"
-	// "time"
 
 	// "NonchangGameServer/api"
 	"NonchangGameServer/api/common"
-	// "NonchangGameServer/model"
+	m "NonchangGameServer/model"
 	mm "NonchangGameServer/model/game/sampleland"
 )
 
@@ -56,6 +60,9 @@ func RegisterSampleLandService() (*endpoints.RPCService, error) {
 	register("GetPlayer", "player", "GET", "game/sampleland/player",
 		"ゲーム用プレイヤー情報取得")
 
+	register("Dev_DecrementStamina", "decrementStamina", "GET", "game/sampleland/dev/decrementStamina",
+		"開発テスト用：行動力を1減らします。")
+
 	return rpc, nil
 }
 
@@ -69,22 +76,88 @@ func (sv *SampleLandService) Ping(c endpoints.Context) (*common.SimpleResult, er
 	return &common.SimpleResult{IsSuccess: true}, nil
 }
 
-// func (sv *SampleLandService) Count(c endpoints.Context) (*common.CountResult, error) {
-// 	// n, err := datastore.NewQuery("ChatMessage").Count(c)
-// 	// if err != nil {
-// 	// 	return nil, err
-// 	// }
-// 	g := goon.FromContext(c)
-// 	n := g.Count(datastore.NewQuery("ChatMessage"))
-// 	return &common.CountResult{n}, nil
+// func isExistPlayer(c endpoints.Context, g *goon.Goon, uuid string) (bool, error) {
+
+// 	n, err := g.Count(datastore.NewQuery("SampleLandPlayer"))
+// 	if err != nil {
+// 		c.Infof("\n======== g.Countでエラー : %+v\n", err)
+// 		return false, err
+// 	}
+// 	c.Infof("\n======== isExistPlayer : %v\n", n)
+// 	if n >= 2 {
+// 		return false, errors.New(fmt.Sprintf("isExistPlayer - 該当プレイヤーレコードが複数ありました。。件数=%v", n))
+// 	}
+// 	return (n == 1), nil
 // }
 
 func (sv *SampleLandService) GetPlayer(c endpoints.Context, req *common.UUIDRequest) (*mm.SampleLandPlayer, error) {
+
+	if req.UUID == "" {
+		return nil, errors.New("\n\n======== GetPlayer : リクエストにUUIDが含まれていません。jsonマップ名は`uuid`となっていますか？\n\n")
+	}
+
 	goon := goon.FromContext(c)
-	data := &mm.SampleLandPlayer{UUID: req.UUID}
-	if err := goon.Get(data); err != nil {
+
+	//存在確認
+	// if exist, err := isExistPlayer(c, goon, req.UUID); err != nil {
+	// 	c.Infof("\n======== isExistPlayerでエラーです。 %v\n", err)
+	// 	return nil, err
+	// } else {
+	// 	c.Infof("\n======== GetPlayer 存在したー %+v", exist)
+	// }
+
+	settings := mm.GetSettingInstance()
+	parentKey := datastore.NewKey(c, "Player", req.UUID, 0, nil)
+
+	data := &mm.SampleLandPlayer{UUID: req.UUID, ParentKey: parentKey}
+	err := goon.Get(data)
+	if err == nil {
+		//取得できたらそのまま返す
+		c.Infof("\n\n======== DEBUG - 取得できました＾＾ \n\n")
+		data.Settings = settings
+		return data, nil
+	}
+
+	//もし「見つからなかった」エラーじゃなければハンドリングしようがないのでerrを返す
+	if !strings.Contains(err.Error(), "goon: cannot find a key for struct") &&
+		!strings.Contains(err.Error(), "datastore: no such entity") {
+		c.Infof("\n\n======== goon.Getでエラーです。 %v\n\n", err.Error())
 		return nil, err
 	}
+
+	//見つからなかった==新規ユーザアクセス。ここで新しいレコードを作ります
+
+	// c.Infof("\n======== TODO - 新規レコード作って返す")
+	data.ParentKey = parentKey
+	data.CreatedAt = time.Now()
+	data.Experience = 1
+	data.Stamina = settings.MaxStamina
+
+	//プレイヤー名を取得
+	playerData := new(m.Player)
+	getError := datastore.Get(c, data.ParentKey, playerData)
+	if getError != nil {
+		c.Infof("\n\n======== ゲーム初回アクセスエラー：プレイヤーがマスタの方にいませんでした。。 UUID=%v\n\n", req.UUID)
+		return nil, getError
+	}
+	data.Name = playerData.Name
+
+	//goonで保存
+	if _, err := goon.Put(data); err != nil {
+		//もし保存に失敗したら、念のためデータは返さない
+		c.Infof("\n\n======== ゲーム初回アクセスエラー：新規データのgoon保存に失敗しました。。。 %v\n\n", data)
+		return nil, err
+	}
+
+	//保存完了、作成値をそのまま返す。
+	data.Settings = settings
+	data.IsSuccess = true
+	c.Infof("\n\n======== DEBUG 初回ユーザ作成 : %v\n\n", data)
 	return data, nil
-	// return nil, nil
+
+}
+
+func (sv *SampleLandService) Dev_DecrementStamina(c endpoints.Context, req *common.UUIDRequest) (*common.SimpleResult, error) {
+	//TODOTODOTODO
+	return &common.SimpleResult{IsSuccess: true}, nil
 }

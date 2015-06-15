@@ -15,20 +15,29 @@ import (
 	"time"
 )
 
-//goonを使うと構造体名がKindになります。ご注意。
+//メモ：goonを使うと構造体名がKindになります。ご注意。
+//（※指定方法がないわけではないけど）
+// また、JSON名の指定は無意味に感じたのでスルーすることにしました。
 type SampleLandPlayer struct {
-	UUID      string         `json:"-" datastore:"-" endpoints="req" goon:"id"`
-	ParentKey *datastore.Key `json:"-" datastore:"-" endpoints="req" goon:"parent"`
-	CreatedAt time.Time      `json:"createdAt" `
-	Level     int            `json:"level" endpoints="req,d=1"`
-	Stamina   int            `json:"stamina" endpoints="d=30"`
-	Name      string         `json:"name" `
-	//DataStoreに入れない系
-	//応答用
-	IsSuccess bool `json:"success" datastore:"-"`
-}
+	UUID      string         `json:"-" datastore:"-" goon:"id" endpoints="req"`
+	ParentKey *datastore.Key `json:"-" datastore:"-" goon:"parent" endpoints="req"`
+	CreatedAt time.Time      `json:"-"`
+	//メモ:LevelはExperienceから算出可能だからいらないかも。一旦おいとく
+	// Level                 int            `json:"level" endpoints="req,d=1"`
+	Experience            int       `datastore:",noindex" endpoints="d=1"`
+	Stamina               int       `datastore:",noindex" endpoints="d=30"`
+	LatestStaminaUpdateAt time.Time `json:"-" datastore:",noindex" endpoints="-"`
+	Name                  string    `datastore:",noindex"`
 
-//プレイヤーの一覧を取得する動線は一旦なくなりました。
-// type PlayerList struct {
-// 	Players []*Player `json:"players"`
-// }
+	//マッチング用（？）
+	PartyAttackTotal int
+
+	//設定含めてみる。
+	//※これはAPIにチャンクを実装したら、その仕様で分離したい。Playerが持つような情報じゃないし。。
+	Settings *sampleLandSetting `datastore:"-"`
+
+	//応答用など
+	//メモ：timeオブジェクトはjsに返しても`2015-06-15T14:30:14.767669Z`と処理しにくい形式になるので、PHP時代同様にUnixtimeで処理することにしています。（ベストプラクティスかどうかは微妙なところ）
+	LatestStaminaUpdateUnixtime int64 `datastore:"-" endpoints="-"`
+	IsSuccess                   bool  `datastore:"-"`
+}
