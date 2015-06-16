@@ -19,6 +19,7 @@ import (
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 	"github.com/mjibson/goon"
 
+	"NonchangGameServer/utils"
 	// "NonchangGameServer/api"
 	"NonchangGameServer/api/common"
 	m "NonchangGameServer/model"
@@ -114,7 +115,14 @@ func (sv *SampleLandService) GetPlayer(c endpoints.Context, req *common.UUIDRequ
 	if err == nil {
 		//取得できたらそのまま返す
 		c.Infof("\n\n======== DEBUG - 取得できました＾＾ \n\n")
+
+		//スタミナ計算
+		stamina, nextHealSec := stamina.New(settings.MaxStamina, settings.StaminaHealSec).GetCurrentStatuses(data.StaminaFlushAt.Unix())
+		data.Stamina = stamina
+		data.StaminaNextHealSec = nextHealSec
+
 		data.Settings = settings
+		data.IsSuccess = true
 		return data, nil
 	}
 
@@ -130,8 +138,7 @@ func (sv *SampleLandService) GetPlayer(c endpoints.Context, req *common.UUIDRequ
 	// c.Infof("\n======== TODO - 新規レコード作って返す")
 	data.ParentKey = parentKey
 	data.CreatedAt = time.Now()
-	data.Experience = 1
-	data.Stamina = settings.MaxStamina
+	// data.Experience = 0
 
 	//プレイヤー名を取得
 	playerData := new(m.Player)

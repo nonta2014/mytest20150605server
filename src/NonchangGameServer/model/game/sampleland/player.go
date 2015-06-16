@@ -24,12 +24,11 @@ type SampleLandPlayer struct {
 	CreatedAt time.Time      `json:"-"`
 	//メモ:LevelはExperienceから算出可能だからいらないかも。一旦おいとく
 	// Level                 int            `json:"level" endpoints="req,d=1"`
-	Experience            int       `datastore:",noindex" endpoints="d=1"`
-	Stamina               int       `datastore:",noindex" endpoints="d=30"`
-	LatestStaminaUpdateAt time.Time `json:"-" datastore:",noindex" endpoints="-"`
-	Name                  string    `datastore:",noindex"`
+	Experience     int       `datastore:",noindex" endpoints="d=1"`
+	StaminaFlushAt time.Time `json:"-" datastore:",noindex" endpoints="-"`
+	Name           string    `datastore:",noindex"`
 
-	//マッチング用（？）
+	//マッチング用（？備忘録がてらの空実装。マッチングはどう実装したもんかなぁ。）
 	PartyAttackTotal int
 
 	//設定含めてみる。
@@ -38,6 +37,7 @@ type SampleLandPlayer struct {
 
 	//応答用など
 	//メモ：timeオブジェクトはjsに返しても`2015-06-15T14:30:14.767669Z`と処理しにくい形式になるので、PHP時代同様にUnixtimeで処理することにしています。（ベストプラクティスかどうかは微妙なところ）
-	LatestStaminaUpdateUnixtime int64 `datastore:"-" endpoints="-"`
-	IsSuccess                   bool  `datastore:"-"`
+	Stamina            int  `datastore:"-" endpoints="-"`
+	StaminaNextHealSec int  `datastore:"-" endpoints="-"`
+	IsSuccess          bool `datastore:"-" endpoints="-`
 }
