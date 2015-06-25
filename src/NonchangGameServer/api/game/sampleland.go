@@ -78,10 +78,10 @@ func RegisterSampleLandService() (*endpoints.RPCService, error) {
 	//- ポイント消費でスタミナ回復などの場合も、回復API側で処理します。
 	register("Dev_DecrementStamina", "dev_decrementStamina", "GET", "game/sampleland/dev_decrementStamina",
 		"開発テスト用：行動力を1減らします。")
-	// register("Dev_IncrementStamina", "incrementStamina", "GET", "game/sampleland/dev_incrementStamina",
-	// 	"開発テスト用：行動力を1増やします。")
-	// register("Dev_ResetStamina", "incrementStamina", "GET", "game/sampleland/dev_resetStamina",
-	// 	"開発テスト用：行動力を完全回復させます。")
+	register("Dev_IncrementStamina", "dev_incrementStamina", "GET", "game/sampleland/dev_incrementStamina",
+		"開発テスト用：行動力を1増やします。")
+	register("Dev_ResetStamina", "dev_resetStamina", "GET", "game/sampleland/dev_resetStamina",
+		"開発テスト用：行動力を完全回復させます。")
 
 	return rpc, nil
 }
@@ -108,7 +108,7 @@ func (sv *SampleLandService) GetPlayer(c endpoints.Context, req *common.UUIDRequ
 
 	data, _, err := sv.GetPlayerRecordByUUID(c, req.UUID, *parentKey)
 	if err == nil {
-		l("======== DEBUG - 取得できました＾＾ 1 ")
+		// l("======== DEBUG - 取得できました＾＾ 1 ")
 		return data, nil
 	} else if err != UUIDNotFoundError {
 		//もし「見つからなかった」エラーじゃなければハンドリングしようがないのでerrを返します。
@@ -158,12 +158,14 @@ func (sv *SampleLandService) GetPlayerRecordByUUID(c endpoints.Context, uuid str
 	err := goon.Get(data)
 	if err == nil {
 		//取得できたらそのまま返す
-		l("======== GetPlayerRecordByUUID DEBUG - 取得できました＾＾ 2 ")
+		// l("======== GetPlayerRecordByUUID DEBUG - 取得できました＾＾ 2 ")
 
 		//StaminaFlushAtからスタミナ算出
 		staminaObj := stamina.New(data.StaminaFlushAt, settings.MaxStamina, settings.StaminaHealSec)
-		staminaPoint, nextHealSec := staminaObj.Get()
-		l("======== GetPlayerRecordByUUID 側Get直後 : %+v,%+v", staminaPoint, nextHealSec)
+		staminaPoint, nextHealSec, err := staminaObj.Get()
+		if err != nil {
+			return nil, nil, err
+		}
 		data.Stamina = staminaPoint
 		data.StaminaNextHealSec = nextHealSec
 
@@ -184,43 +186,56 @@ func (sv *SampleLandService) GetPlayerRecordByUUID(c endpoints.Context, uuid str
 }
 
 func (sv *SampleLandService) Dev_DecrementStamina(c endpoints.Context, req *common.UUIDRequest) (*samplelandmodel.SampleLandPlayer, error) {
-	l("======== Dev_DecrementStaminaに来ました。")
+	// l("======== Dev_DecrementStaminaに来ました。")
 
-	// l("======== Dev_DecrementStamina ************* テスト開始 *************** ")
-	// l("======== Dev_DecrementStamina ************* 今何時？ *************** %+v", time.Now())
+	// goon := goon.FromContext(c)
 	// // settings := samplelandmodel.GetSettingInstance()
-	// // data := &samplelandmodel.SampleLandPlayer{UUID: req.UUID, ParentKey: (datastore.NewKey(c, "Player", req.UUID, 0, nil))}
-	// // staminaObj := stamina.New(data.StaminaFlushAt, settings.MaxStamina, settings.StaminaHealSec)
-	// // l("======== Dev_DecrementStamina ************* staminaObj *************** %+v", staminaObj)
+	// parentKey := datastore.NewKey(c, "Player", req.UUID, 0, nil)
+	// data, staminaObj, err := sv.GetPlayerRecordByUUID(c, req.UUID, *parentKey)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// staminaObj.Add(-1)
+	// staminaPoint, nextHealSec, err := staminaObj.Get()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// data.Stamina = staminaPoint
+	// data.StaminaNextHealSec = nextHealSec
 
-	// sss := stamina.NewUtil(20, 2)
-	// sss2, sss3 := sss.GetCurrentStatuses(time.Now().Add(-time.Second * 18))
-	// l("======== Dev_DecrementStamina ************* sss *************** %+v%+v", sss2, sss3)
+	// // l("======== Dev_DecrementStamina 1.1 %+v", staminaObj)//確かに増えてる
+	// data.StaminaFlushAt = staminaObj.FlushAt
+	// if _, err := goon.Put(data); err != nil {
+	// 	//もし保存に失敗したら、念のためデータは返さない
+	// 	l("======== スタミナ保存エラー：データのgoon保存に失敗しました。。。 %v", data)
+	// 	return nil, err
+	// }
+	// // l("======== Dev_DecrementStamina 2 (増えてる？) %+v", staminaObj)//増えてる
 
-	// l("======== Dev_DecrementStamina ************* テスト終了 *************** ")
+	// return data, nil
 
-	//以下、実際のコード
-	// l("======== Dev_DecrementStamina ************* 以下、実際のコード *************** ")
-
-	goon := goon.FromContext(c)
-	// settings := samplelandmodel.GetSettingInstance()
-	parentKey := datastore.NewKey(c, "Player", req.UUID, 0, nil)
-	data, staminaObj, err := sv.GetPlayerRecordByUUID(c, req.UUID, *parentKey)
+	data, err := dev_staminaUpdate(sv, c, req.UUID, -1) //スタミナ減らしてupdate
 	if err != nil {
 		return nil, err
 	}
-	// staminaObj := staminaObj.New(data.StaminaFlushAt, settings.MaxStamina, settings.StaminaHealSec)
+	return data, nil
 
-	// l("======== Dev_DecrementStamina 1 %+v", staminaObj)
-	a, b := staminaObj.Get()
-	_ = a
-	_ = b
-	staminaObj.Add(-2)
-	l("======== Dev_DecrementStamina 側add直後 : %+v,%+v", a, b)
-	//応答フィールドに代入
-	// l("======== Dev_DecrementStamina 側get直前")
-	staminaPoint, nextHealSec := staminaObj.Get()
-	l("======== Dev_DecrementStamina 側Get直後 : %+v,%+v", staminaPoint, nextHealSec)
+}
+
+func dev_staminaUpdate(sv *SampleLandService, c endpoints.Context, uuid string, addStamina int) (*samplelandmodel.SampleLandPlayer, error) {
+
+	goon := goon.FromContext(c)
+	// settings := samplelandmodel.GetSettingInstance()
+	parentKey := datastore.NewKey(c, "Player", uuid, 0, nil)
+	data, staminaObj, err := sv.GetPlayerRecordByUUID(c, uuid, *parentKey)
+	if err != nil {
+		return nil, err
+	}
+	staminaObj.Add(addStamina)
+	staminaPoint, nextHealSec, err := staminaObj.Get()
+	if err != nil {
+		return nil, err
+	}
 	data.Stamina = staminaPoint
 	data.StaminaNextHealSec = nextHealSec
 
@@ -233,5 +248,25 @@ func (sv *SampleLandService) Dev_DecrementStamina(c endpoints.Context, req *comm
 	}
 	// l("======== Dev_DecrementStamina 2 (増えてる？) %+v", staminaObj)//増えてる
 
+	return data, nil
+}
+
+func (sv *SampleLandService) Dev_IncrementStamina(c endpoints.Context, req *common.UUIDRequest) (*samplelandmodel.SampleLandPlayer, error) {
+
+	data, err := dev_staminaUpdate(sv, c, req.UUID, 1) //スタミナ増やしてupdate
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (sv *SampleLandService) Dev_ResetStamina(c endpoints.Context, req *common.UUIDRequest) (*samplelandmodel.SampleLandPlayer, error) {
+
+	settings := samplelandmodel.GetSettingInstance()
+
+	data, err := dev_staminaUpdate(sv, c, req.UUID, settings.MaxStamina) //スタミナ増やしてupdate
+	if err != nil {
+		return nil, err
+	}
 	return data, nil
 }

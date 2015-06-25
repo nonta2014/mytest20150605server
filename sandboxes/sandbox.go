@@ -1,7 +1,7 @@
 package main
 
 import (
-	"../src/NonchangGameServer/utils"
+	"../src/NonchangGameServer/model/stamina"
 	"fmt"
 	// "math"
 	"time"
@@ -22,11 +22,25 @@ func main() {
 
 	l("- スタミナ実装テスト\n")
 
-	savedFlushUnixtime := time.Now().Add(-17 * time.Second).Unix() //n秒前としてみる
-	currentStamina, nextHealSec := stamina.New(30, 5).GetCurrentStatuses(savedFlushUnixtime)
+	ut := stamina.NewUtil(30, 5)
 
-	l("\t Stamina=%+v\n", currentStamina) //今のスタミナ表示
-	l("\t あと%+v秒で回復します。\n", nextHealSec)  //今のスタミナ表示
+	{
+
+		savedFlushUnixtime := time.Now().Add(-4 * time.Second) //n秒前としてみる
+		currentStamina, nextHealSec := ut.GetCurrentStatuses(savedFlushUnixtime)
+
+		l("\t Stamina=%+v\n", currentStamina) //今のスタミナ表示
+		l("\t あと%+v秒で回復します。\n", nextHealSec)  //今のスタミナ表示
+	}
+
+	{
+		maxtime := ut.GetJustMaxFlushAt()
+		savedFlushUnixtime := ut.GetStaminaDownedFlushTime(maxtime, 5)
+		savedFlushUnixtime = savedFlushUnixtime.Add(-1 * time.Second)
+		currentStamina, nextHealSec := ut.GetCurrentStatuses(savedFlushUnixtime)
+		l("\t Stamina=%+v\n", currentStamina)
+		l("\t あと%+v秒で回復します。\n", nextHealSec) //あれっ。おかしい。
+	}
 
 	l("\n========= サンドボックス単体実行完了\n\n")
 }
