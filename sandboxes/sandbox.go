@@ -1,9 +1,12 @@
 package main
 
+//実行方法メモ : go run ./sandboxes/sandbox.go
+
 import (
-	"../src/NonchangGameServer/model/stamina"
+	// "../src/NonchangGameServer/model/stamina"
 	"fmt"
 	// "math"
+	"math/rand"
 	"time"
 )
 
@@ -12,43 +15,34 @@ func main() {
 	l("\n\n========= サンドボックス開始\n\n")
 
 	// a := &TestObject{Name: "123", Text: "456"}
+	// l("test %+v", a)
 
 	// fmt.Printf(a.Name + "\n")
 	// _, b := a.TestFunc()
 	// fmt.Printf(b + "\n")
 
-	//===========================
-	//スタミナ実装テスト
-
-	l("- スタミナ実装テスト\n")
-
-	ut := stamina.NewUtil(30, 5)
-
-	{
-
-		savedFlushUnixtime := time.Now().Add(-4 * time.Second) //n秒前としてみる
-		currentStamina, nextHealSec := ut.GetCurrentStatuses(savedFlushUnixtime)
-
-		l("\t Stamina=%+v\n", currentStamina) //今のスタミナ表示
-		l("\t あと%+v秒で回復します。\n", nextHealSec)  //今のスタミナ表示
-	}
-
-	{
-		maxtime := ut.GetJustMaxFlushAt()
-		savedFlushUnixtime := ut.GetStaminaDownedFlushTime(maxtime, 5)
-		savedFlushUnixtime = savedFlushUnixtime.Add(-1 * time.Second)
-		currentStamina, nextHealSec := ut.GetCurrentStatuses(savedFlushUnixtime)
-		l("\t Stamina=%+v\n", currentStamina)
-		l("\t あと%+v秒で回復します。\n", nextHealSec) //あれっ。おかしい。
-	}
-
+	//randの使い方テスト
+	// rand.Seed(time.Now(
+).UnixNano())
+	// l("random test: %+v\n", rand.Intn(100))
+	// l("random test: %+v\n", rand.Float32())
+	// for i := 0; i < 50; i++ {
+	// 	s := rand.Float32()
+	// 	if s < 0.333 {
+	// 		l("rand is downer. %+v\n", s)
+	// 	} else if s < 0.666 {
+	// 		l("rand is upper.%+v\n", s)
+	// 	} else {
+	// 		l("rand is high upper.%+v\n", s)
+	// 	}
+	// }
 	l("\n========= サンドボックス単体実行完了\n\n")
 }
 
-// type TestObject struct {
-// 	Name string
-// 	Text string
-// }
+type TestObject struct {
+	Name string
+	Text string
+}
 
 // func (to *TestObject) TestFunc() (a, b string) {
 // 	return "abc", "defg"
