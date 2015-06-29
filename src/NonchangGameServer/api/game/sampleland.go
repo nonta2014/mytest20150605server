@@ -112,7 +112,7 @@ func (sv *SampleLandService) GetPlayerAndSetting(c endpoints.Context, req *commo
 
 	data, _, err := sv.GetPlayerRecordByUUID(c, req.UUID)
 	if err == nil {
-		// l("======== DEBUG - 取得できました＾＾ 1 ")
+		l("======== DEBUG - 取得できました＾＾ 1 ")
 		// return data, nil
 		return &samplelandmodel.SampleLandPlayerAndGameSetting{PlayerData: data, Settings: settings}, nil
 	} else if err != UUIDNotFoundError {
@@ -121,9 +121,6 @@ func (sv *SampleLandService) GetPlayerAndSetting(c endpoints.Context, req *commo
 	}
 
 	//見つからなかった==新規ユーザアクセス。ここで新しいレコードを作ります
-
-	// l("======== TODO - 新規レコード作って返す")
-	data.ParentKey = datastore.NewKey(c, "Player", req.UUID, 0, nil)
 	data.CreatedAt = time.Now()
 	// data.Experience = 0
 
@@ -148,7 +145,7 @@ func (sv *SampleLandService) GetPlayerAndSetting(c endpoints.Context, req *commo
 	data.Stamina = settings.MaxStamina
 	data.StaminaNextHealSec = -1
 	data.IsSuccess = true
-	l("======== DEBUG 初回ユーザ作成 : %v ", data)
+	// l("======== DEBUG 初回ユーザ作成 : %v ", data)
 	return &samplelandmodel.SampleLandPlayerAndGameSetting{PlayerData: data, Settings: settings}, nil
 
 }
@@ -305,8 +302,8 @@ func (sv *SampleLandService) GetPlayerRecordByUUID(c endpoints.Context, uuid str
 		return nil, nil, err
 	}
 
-	//見つからなかったエラー
-	return nil, nil, UUIDNotFoundError
+	//見つからなかったエラー。。ただし新規作成に備えて割り当てたplayerDataオブジェクトは返す
+	return data, nil, UUIDNotFoundError
 }
 
 func staminaUpdateSub(sv *SampleLandService, c endpoints.Context, uuid string, addStamina int) (*samplelandmodel.SampleLandPlayer, error) {
